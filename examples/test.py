@@ -12,9 +12,12 @@ P = numpy.swapaxes(P,1,2)
 m = MBI.MBI(P,[x,y],[5,5],[4,4])
 
 h = 1e-5
+f0 = m.evaluate([[0.0,0.0],[0.0,0.5],[0.0,1.0],[0.5,0.0],[0.5,0.5],[0.5,1.0],[1.0,0.0],[1.0,0.5],[1.0,1.0]])
+print f0
 t0 = time.time()
 f0 = m.evaluate([0.25,0.25])
 print time.time() - t0
+print '---f'
 print f0
 print '---df/dx'
 print m.evaluate([0.25,0.25],1,0)

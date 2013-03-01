@@ -78,7 +78,6 @@ class MBI(object):
         na = numpy.prod(ks)
         nP = x.shape[0]
 
-
         t = numpy.zeros((nP,nx),order='F')
         for i in range(nx):
             k, m, n = ks[i], ms[i], ns[i]

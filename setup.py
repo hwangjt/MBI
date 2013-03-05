@@ -10,13 +10,14 @@ sources = [
     'src/paramuni.f90',
     ]
 
-config = Configuration(name='MBI')
+config = Configuration('MBI')
 config.add_extension('MBIlib', sources=sources)
 
-kwds = {'install_requires':['numpy','scipy'],
+kwds = {'install_requires': ['numpy', 'scipy'],
         'version': '0.1',
         'zip_safe': False,
         'license': 'LGPL',
+        'packages': ['MBI']
         }
 kwds.update(config.todict())
 

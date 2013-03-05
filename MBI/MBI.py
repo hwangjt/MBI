@@ -67,16 +67,21 @@ class MBI(object):
         return scipy.sparse.csc_matrix((Ba,(Bi,Bj)))
 
     def evaluate(self, x, d1=0, d2=0):
-        getf = lambda d1, d2: MBIlib.evaluatept(d1, d2, nx, nf, self.C.shape[0], ks, ms, t, self.C)
-        getx = lambda i, d1, d2: MBIlib.evaluatept(d1, d2, 1, 1, self.Cx[i].shape[0], ks[i], ms[i], t[i], self.Cx[i])
+        getf = lambda d1, d2: MBIlib.evaluatept(d1, d2, na, nx, nf, self.C.shape[0], nP, ks, ms, t, self.C)
+        getx = lambda i, d1, d2: MBIlib.evaluatept(d1, d2, k, 1, 1, self.Cx[i].shape[0], nP, k, m, t[:,i], self.Cx[i])
+
+        x = numpy.array(x)
+        x = numpy.reshape(x,(1,x.shape[0]),order='F') if len(x.shape) is 1 else x
 
         nx, nf, nP = self.nx, self.nf, self.nP
         ns, ms, ks = self.ns, self.ms, self.ks
+        na = numpy.prod(ks)
+        nP = x.shape[0]
 
-        t = numpy.zeros(nx)
+        t = numpy.zeros((nP,nx),order='F')
         for i in range(nx):
             k, m, n = ks[i], ms[i], ns[i]
-            t[i] = MBIlib.inversemap(k, m, x[i], self.Cx[i])
+            t[:,i] = MBIlib.inversemap(k, m, nP, x[:,i], self.Cx[i])
 
         if d1 is 0 and d2 is 0:
             return getf(0,0)

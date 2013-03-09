@@ -1,4 +1,77 @@
-subroutine evaluatePt(d1, d2, na, nx, nf, nC, nP, ks, ms, t, C, P)
+subroutine evaluate(d1, d2, nx, nf, nC, nCx1, nCx2, nP, ks, ms, t, C, Cx1, Cx2, P)
+
+  implicit none
+
+  !Fortran-python interface directives
+  !f2py intent(in) d1, d2, nx, nf, nC, nCx1, nCx2, nP, ks, ms, t, C, Cx1, Cx2
+  !f2py intent(out) P
+  !f2py depend(nx) ks, ms
+  !f2py depend(nP,nx) t
+  !f2py depend(nC,nf) C
+  !f2py depend(nCx1) Cx1
+  !f2py depend(nCx2) Cx2
+  !f2py depend(nP,nf) P
+
+  !Input
+  integer, intent(in) ::  d1, d2, nx, nf, nC, nCx1, nCx2, nP, ks(nx), ms(nx)
+  double precision, intent(in) ::  t(nP,nx), C(nC,nf), Cx1(nCx1,1), Cx2(nCx2,1)
+
+  !Output
+  double precision, intent(out) ::  P(nP,nf)
+
+  !Working
+  integer iP, na, na1, na2, k1(1), k2(1), m1(1), m2(1)
+  double precision t1(nP,1), t2(nP,1)
+  double precision f(nP,nf), dfdu(nP,nf), d2fdu2(nP,nf), d2fdudv(nP,nf)
+  double precision dxdu(nP,1), dxdv(nP,1), d2xdu2(nP,1)
+
+  na = product(ks)
+  if (d1 .gt. 0) then
+     na1 = ks(d1)
+     k1(1) = ks(d1)
+     m1(1) = ms(d1)
+     t1(:,1) = t(:,d1)
+  end if
+  if (d2 .gt. 0) then
+     na2 = ks(d2)
+     k2(1) = ks(d2)
+     m2(1) = ms(d2)
+     t2(:,1) = t(:,d2)
+  end if
+
+  if ((d1 .eq. 0) .and. (d2 .eq. 0)) then
+     call evaluatePts(0, 0, na, nx, nf, nC, nP, ks, ms, t, C, f)
+     P(:,:) = f(:,:)
+  else if ((d1 .ne. 0) .and. (d2 .eq. 0)) then
+     call evaluatePts(d1, 0,  na, nx, nf,   nC, nP, ks, ms,  t,   C, dfdu)
+     call evaluatePts( 1, 0, na1,  1,  1, nCx1, nP, k1, m1, t1, Cx1, dxdu)
+     do iP=1,nP
+        P(iP,:) = dfdu(iP,:)/dxdu(iP,1)
+     end do
+  else if ((d1 .ne. 0) .and. (d1 .eq. d2)) then
+     call evaluatePts(d1,  0,  na, nx, nf,   nC, nP, ks, ms,  t,   C, dfdu)
+     call evaluatePts(d1, d1,  na, nx, nf,   nC, nP, ks, ms,  t,   C, d2fdu2)
+     call evaluatePts( 1,  0, na1,  1,  1, nCx1, nP, k1, m1, t1, Cx1, dxdu)
+     call evaluatePts( 1,  1, na1,  1,  1, nCx1, nP, k1, m1, t1, Cx1, d2xdu2)
+     do iP=1,nP
+        P(iP,:) = (d2fdu2(iP,:)*dxdu(iP,1) - dfdu(iP,:)*d2xdu2(iP,1))/dxdu(iP,1)**3
+     end do
+  else if ((d1 .ne. 0) .and. (d2 .ne. 0)) then
+     call evaluatePts(d1, d2,  na, nx, nf,   nC, nP, ks, ms,  t,   C, d2fdudv)
+     call evaluatePts( 1,  0, na1,  1,  1, nCx1, nP, k1, m1, t1, Cx1, dxdu)
+     call evaluatePts( 1,  0, na2,  1,  1, nCx2, nP, k2, m2, t2, Cx2, dxdv)
+     do iP=1,nP
+        P(iP,:) = d2fdudv(iP,:)/dxdu(iP,1)/dxdv(iP,1)
+     end do
+  else
+     P(:,:) = 0.0
+  end if
+  
+end subroutine evaluate
+
+
+
+subroutine evaluatePts(d1, d2, na, nx, nf, nC, nP, ks, ms, t, C, P)
 
   implicit none
 
@@ -65,7 +138,7 @@ subroutine evaluatePt(d1, d2, na, nx, nf, nC, nP, ks, ms, t, C, P)
      end do
   end do
 
-end subroutine evaluatePt
+end subroutine evaluatePts
 
 
 

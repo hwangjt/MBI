@@ -121,6 +121,10 @@ subroutine basis(k, kpm, t, d, B, i0)
      i0 = m-k
   end if
 
+  !if (i0 .eq. -1) then
+  !   print *, 'MBI error: t outside of knot spans'
+  !end if
+
   do i=2,k
      l = i-1
      j1 = k-l

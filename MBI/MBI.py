@@ -10,17 +10,13 @@ class MBI(object):
         nf = 1 if len(P.shape) is nx else P.shape[nx]
 
         ns = numpy.array(P.shape[:nx],order='F')
-        ms = numpy.array([int(ns[i]/3) for i in range(nx)])
-        ks = 4*numpy.ones(ns.shape[0],int)
-        ms[:] = ms[:] if ms0 is None else ms0
-        ks[:] = ks[:] if ks0 is None else ks0
-        for i in range(nx):
-            ks[i] = min(ks[i], ms[i])
-        nP = numpy.prod(ns)
+        ms = numpy.array([ms0[i] if ms0 is not None else int(ns[i]/3) for i in range(nx)],int)
+        ks = numpy.array([min(ks0[i] if ks0 is not None else 4, ms[i]) for i in range(nx)],int)
+        nT = numpy.prod(ns)
 
         self.xs = xs
         self.ns, self.ms, self.ks = ns, ms, ks
-        self.nx, self.nf, self.nP = nx, nf, nP
+        self.nx, self.nf, self.nT = nx, nf, nT
 
         ts = []
         for i in range(nx):
@@ -31,13 +27,12 @@ class MBI(object):
         t = numpy.zeros(P.shape[:nx]+(nx,),order='F')
         for ind,x in numpy.ndenumerate(t):
             t[ind] = ts[ind[-1]][ind[ind[-1]]]
-        self.t = t.reshape((nP,nx),order='F')
-        P = numpy.reshape(P,(nP,nf),order='F')
+        t = t.reshape((nT,nx),order='F')
+        P = numpy.reshape(P,(nT,nf),order='F')
 
-        B = self.assembleJacobian(0, 0)
+        B = self.assembleJacobian(0, 0, nx, nT, nT*numpy.prod(ks), ks, ms, t)
         BT = B.transpose()
-        BTB = BT.dot(B)
-        BTP = BT.dot(P)
+        BTB, BTP = BT.dot(B), BT.dot(P)
 
         nC = numpy.prod(ms)
         C = numpy.zeros((nC,nf),order='F')
@@ -47,47 +42,28 @@ class MBI(object):
         Cx = []
         for i in range(nx):
             k, m, n = ks[i], ms[i], ns[i]
-            nB = k*n
-            Ba, Bi, Bj = MBIlib.computejacobian(0, 0, 1, n, nB, k, m, ts[i])
-            B = scipy.sparse.csc_matrix((Ba,(Bi,Bj)))
+            B = self.assembleJacobian(0, 0, 1, n, k*n, k, m, ts[i])
             BT = B.transpose()
-            BTB = BT.dot(B)
-            BTP = BT.dot(xs[i])
+            BTB, BTP = BT.dot(B), BT.dot(xs[i])
             Cx.append(scipy.sparse.linalg.cg(BTB,BTP)[0])
             Cx[-1][0] = xs[i][0]
             Cx[-1][-1] = xs[i][-1]
 
         self.C, self.Cx = C, Cx
 
-    def assembleJacobian(self, d1, d2):
-        nx, nf, nP = self.nx, self.nf, self.nP
-        ns, ms, ks = self.ns, self.ms, self.ks
-        nB = nP*numpy.prod(ks)
-        Ba, Bi, Bj = MBIlib.computejacobian(d1, d2, nx, nP, nB, ks, ms, self.t)
+    def assembleJacobian(self, d1, d2, nx, nP, nB, ks, ms, t):
+        Ba, Bi, Bj = MBIlib.computejacobian(d1, d2, nx, nP, nB, ks, ms, t)
         return scipy.sparse.csc_matrix((Ba,(Bi,Bj)))
 
     def evaluate(self, x, d1=0, d2=0):
-        getf = lambda d1, d2: MBIlib.evaluatept(d1, d2, na, nx, nf, self.C.shape[0], nP, ks, ms, t, self.C)
-        getx = lambda i, d1, d2: MBIlib.evaluatept(d1, d2, k, 1, 1, self.Cx[i].shape[0], nP, k, m, t[:,i], self.Cx[i])
-
-        x = numpy.array(x)
-        x = numpy.reshape(x,(1,x.shape[0]),order='F') if len(x.shape) is 1 else x
-
-        nx, nf, nP = self.nx, self.nf, self.nP
+        nx, nf, nT = self.nx, self.nf, self.nT
         ns, ms, ks = self.ns, self.ms, self.ks
-        na = numpy.prod(ks)
         nP = x.shape[0]
 
         t = numpy.zeros((nP,nx),order='F')
         for i in range(nx):
-            k, m, n = ks[i], ms[i], ns[i]
-            t[:,i] = MBIlib.inversemap(k, m, nP, x[:,i], self.Cx[i])
+            t[:,i] = MBIlib.inversemap(ks[i], ms[i], nP, x[:,i], self.Cx[i])
 
-        if d1 is 0 and d2 is 0:
-            return getf(0,0)
-        elif d1 is not 0 and d2 is 0:
-            return getf(d1,0)/getx(d1-1,1,0)
-        elif d1 is not 0 and d1 is d2:
-            return (getf(d1,d1)*getx(d1-1,1,0) - getf(d1,0)*getx(d1-1,1,1))/getx(d1-1,1,0)**3
-        elif d1 is not 0 and d2 is not 0 and d1 is not d2:
-            return getf(d1,d2)/getx(d1-1,1,0)/getx(d2-1,1,0)
+        i1, i2 = max(0, d1-1), max(0, d2-1)
+        nC, nCx1, nCx2 = self.C.shape[0], self.Cx[i1].shape[0], self.Cx[i2].shape[0]
+        return MBIlib.evaluate(d1, d2, nx, nf, nC, nCx1, nCx2, nP, ks, ms, t, self.C, self.Cx[i1], self.Cx[i2])

@@ -28,9 +28,10 @@ class MBI(object):
         for ind,x in numpy.ndenumerate(t):
             t[ind] = ts[ind[-1]][ind[ind[-1]]]
         t = t.reshape((nT,nx),order='F')
+        self.t = t
         P = numpy.reshape(P,(nT,nf),order='F')
 
-        B = self.assembleJacobian(0, 0, nx, nT, nT*numpy.prod(ks), ks, ms, t)
+        B = self.getJacobian(0, 0)
         BT = B.transpose()
         BTB, BTP = BT.dot(B), BT.dot(P)
 
@@ -55,10 +56,23 @@ class MBI(object):
         Ba, Bi, Bj = MBIlib.computejacobian(d1, d2, nx, nP, nB, ks, ms, t)
         return scipy.sparse.csc_matrix((Ba,(Bi,Bj)))
 
+    def getJacobian(self, d1, d2):
+        return self.assembleJacobian(d1, d2, self.nx, self.nT, self.nT*numpy.prod(self.ks), self.ks, self.ms, self.t)
+
     def evaluate(self, x, d1=0, d2=0):
         nx, nf, nT = self.nx, self.nf, self.nT
         ns, ms, ks = self.ns, self.ms, self.ks
         nP = x.shape[0]
+
+        minV = numpy.min
+        maxV = numpy.max
+        for i in range(nx):
+            if minV(x[:,i]) < minV(self.Cx[i]):
+                print 'MBI error: min value out of bounds', i, minV(x[:,i]), minV(self.Cx[i])
+                #raise Exception('MBI evaluate error: min value out of bounds')
+            if maxV(x[:,i]) > maxV(self.Cx[i]):
+                print 'MBI error: max value out of bounds', i, maxV(x[:,i]), maxV(self.Cx[i])
+                #raise Exception('MBI evaluate error: max value out of bounds')
 
         t = numpy.zeros((nP,nx),order='F')
         for i in range(nx):

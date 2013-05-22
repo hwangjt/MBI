@@ -11,13 +11,14 @@ sources = [
     ]
 
 config = Configuration('MBI')
-config.add_extension('MBIlib', sources=sources)
+config.add_extension('MBIlib', sources=sources)#, extra_compile_args=['--fcompiler=gnu95'])
 
 kwds = {'install_requires': ['numpy', 'scipy'],
         'version': '0.1',
         'zip_safe': False,
         'license': 'LGPL',
-        'packages': ['MBI']
+        'packages': ['MBI'],
+        'script_args': ['build', '--fcompiler=gnu95', 'install', '--home=/home/hwangjt/virtual']
         }
 kwds.update(config.todict())
 

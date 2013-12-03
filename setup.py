@@ -18,7 +18,7 @@ kwds = {'install_requires': ['numpy', 'scipy'],
         'zip_safe': False,
         'license': 'LGPL',
         'packages': ['MBI'],
-        'script_args': ['build', '--fcompiler=gnu95', 'install']
+        #'script_args': ['build', '--fcompiler=gnu95', 'install']
         }
 kwds.update(config.todict())
 

@@ -16,7 +16,7 @@ config.add_extension('MBIlib', sources=sources)#, extra_compile_args=['--fcompil
 kwds = {'install_requires': ['numpy', 'scipy'],
         'version': '0.1',
         'zip_safe': False,
-        'license': 'LGPL',
+        'license': 'Apache (v2.0)',
         'packages': ['MBI'],
         'script_args': ['build', '--fcompiler=gnu95', 'install', '--home=/home/hwangjt/virtual']
         }

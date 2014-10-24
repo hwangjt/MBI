@@ -173,27 +173,35 @@ subroutine inverseMap(k, m, nP, P0, C, t)
      call basis(k, k+m, x, d, B, i0)
      call basis1(k, k+m, x, d, B1, i1)
      f = -P0(iP)
-     dfdx = 0
+     dfdx = 0.0
      do i=1,k
         f = f + B(i)*C(i0+i)
-        dfdx = dfdx + B1(i)*C(i1+i)
+        dfdx = dfdx + B1(i)*C(i1+1)
      end do
-     
-     do j=1,100    
-        !print *, j, f
+
+     do j=1,100
+        !print *, j, x, f
         if (abs(f) .lt. 1e-15) then
            exit
         end if
+
         x = x - f/dfdx
-        
+
+        if (x .lt. 0) then
+           x = 0.0
+        else if (x .gt. 1) then
+           x = 1.0
+        end if
+
         call basis(k, k+m, x, d, B, i0)
         call basis1(k, k+m, x, d, B1, i1)
         f = -P0(iP)
-        dfdx = 0
+        dfdx = 0.0
         do i=1,k
            f = f + B(i)*C(i0+i)
-           dfdx = dfdx + B1(i)*C(i1+i)
+           dfdx = dfdx + B1(i) * C(i1+i)
         end do
+
      end do
      t(iP) = x
   end do

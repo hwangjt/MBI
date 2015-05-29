@@ -10,3 +10,4 @@ SRC_FILES = src/basis.f90 \
 
 default:	
 	f2py --fcompiler=gnu95 -c ${SRC_FILES} -m MBIlib
+	mv MBIlib.so MBI/

@@ -18,8 +18,11 @@ kwds = {'install_requires': ['numpy', 'scipy'],
         'zip_safe': False,
         'license': 'Apache (v2.0)',
         'packages': ['MBI'],
-        'script_args': ['build', '--fcompiler=gnu95', 'install']
+        'package_data': { 'MBI': ['examples/*.py'] },
+        'include_package_data': True,
+        #'script_args': ['build', '--fcompiler=gnu95', 'install']
         }
 kwds.update(config.todict())
 
 setup(**kwds)
+
